@@ -1,0 +1,17 @@
+{
+  "name": "uyu",
+  "owner": {
+    "name": "onggyu32"
+  },
+  "metadata": {
+    "description": "우유의 도구함에서 나눠 쓰는 Claude 플러그인"
+  },
+  "plugins": [
+    {
+      "name": "edufine",
+      "source": "./plugins/edufine",
+      "description": "견적서 사진으로 에듀파인 품의(제목·개요·품목내역)를 만들어 주는 스킬",
+      "version": "0.1.0"
+    }
+  ]
+}
