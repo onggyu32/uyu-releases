@@ -1,0 +1,322 @@
+<meta charset="utf-8">
+<title>에듀파인 품의 도우미</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 왼쪽은 견적서 입력, 오른쪽은 에듀파인에 그대로 옮길 결과. 좁은 화면에서는 위아래로 쌓인다. */
+:root{
+  --bg:#f3f5f7; --panel:#ffffff; --ink:#18232e; --muted:#5b6a78; --line:#d7dee5;
+  --accent:#1f5f8b; --accent-ink:#ffffff; --soft:#e6eef5; --ok:#2f7d4f; --bad:#b23a2e;
+  --sans:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  --mono:"IBM Plex Mono","D2Coding",Consolas,"Malgun Gothic",monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171d; --panel:#18212a; --ink:#e3e9ef; --muted:#97a6b4; --line:#2c3a47;
+  --accent:#6fb0dc; --accent-ink:#0d1a24; --soft:#1f2d3a; --ok:#6cc58f; --bad:#ef8a7e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171d; --panel:#18212a; --ink:#e3e9ef; --muted:#97a6b4; --line:#2c3a47;
+  --accent:#6fb0dc; --accent-ink:#0d1a24; --soft:#1f2d3a; --ok:#6cc58f; --bad:#ef8a7e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;margin:0}
+.wrap{max-width:1280px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;margin-bottom:16px}
+h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance}
+header p{margin:0;color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+h2{font-size:15px;font-weight:600;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.lbl{font-size:12px;color:var(--muted);letter-spacing:.02em}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.fields .full{grid-column:1/-1}
+@media (max-width:520px){.fields{grid-template-columns:minmax(0,1fr)}}
+label.f{display:flex;flex-direction:column;gap:4px}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 8px;width:100%;min-width:0}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+textarea{resize:vertical}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th{font-size:12px;font-weight:500;color:var(--muted);text-align:left;padding:4px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:3px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+#items input{padding:4px 6px}
+#items td.amt{text-align:right;white-space:nowrap;padding-right:8px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-size:13px;border-radius:4px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:500}
+button.x{border:none;background:none;color:var(--muted);padding:2px 6px;font-size:16px;line-height:1}
+button.x:hover{color:var(--bad)}
+.out{font-family:var(--mono);font-size:13px;background:var(--soft);border-radius:4px;padding:10px 12px;white-space:pre-wrap;word-break:break-all;margin:0}
+.meta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.pill{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.pill.ok{color:var(--ok)} .pill.bad{color:var(--bad);font-weight:600}
+#rows td.c{cursor:pointer;border-radius:3px}
+#rows td.c:hover{background:var(--soft)}
+#rows td.done{color:var(--ok)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:6px 14px;border-radius:4px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+a.bm{display:inline-block;padding:5px 12px;border:1px dashed var(--accent);border-radius:4px;color:var(--accent);text-decoration:none;font-weight:500}
+details summary{cursor:pointer;color:var(--muted);font-size:13px}
+.hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>에듀파인 품의 도우미</h1>
+    <p>견적서 내용을 넣으면 제목·개요·품목내역이 에듀파인 양식대로 만들어집니다.</p>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section>
+        <h2>기본 정보 <span class="btns"><button id="ex1" type="button">지난 품의 예시</button><button id="ex2" type="button">10월 견적서 예시</button></span></h2>
+        <div class="fields">
+          <label class="f full"><span class="lbl">건명 (= 제목)</span><input id="subject"></label>
+          <label class="f"><span class="lbl">위치</span><input id="location"></label>
+          <label class="f"><span class="lbl">구입처</span><input id="vendor"></label>
+          <label class="f"><span class="lbl">견적서 합계 (검산용, 선택)</span><input id="quoteTotal" class="num" inputmode="numeric"></label>
+          <label class="f"><span class="lbl">붙임 (한 줄에 하나)</span><textarea id="attachments" rows="2"></textarea></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>품목 <button id="addRow" type="button">행 추가</button></h2>
+        <div class="scroll">
+          <table id="items">
+            <thead><tr><th>품명 (에듀파인 내용)</th><th>개요 표기</th><th>규격</th><th>수량</th><th>단위</th><th>단가</th><th>금액</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="hint">개요 표기를 비워 두면 품명 끝의 K·C·M·Y를 검정·파랑·빨강·노랑으로 바꿔 씁니다.</p>
+      </section>
+
+      <section>
+        <h2>Claude 결과 불러오기</h2>
+        <textarea id="importBox" rows="3" placeholder='Claude가 견적서 사진을 읽고 준 입력 데이터({"subject": ...})를 붙여넣으세요'></textarea>
+        <div class="btns" style="margin-top:8px"><button id="importBtn" type="button">불러오기</button></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section>
+        <h2>제목 <button class="primary" data-copy="title" type="button">제목 복사</button></h2>
+        <pre class="out" id="outTitle"></pre>
+        <div class="meta"><span id="titleBytes"></span></div>
+      </section>
+
+      <section>
+        <h2>개요 <button class="primary" data-copy="overview" type="button">개요 복사</button></h2>
+        <pre class="out" id="outOverview"></pre>
+        <div class="meta"><span id="ovBytes"></span><span id="check"></span></div>
+      </section>
+
+      <section>
+        <h2>품목내역 <span class="btns"><button data-copy="tsv" type="button">표 전체 복사 (엑셀용)</button></span></h2>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>순번</th><th>* 내용</th><th>규격</th><th class="num">수량</th><th>단위</th><th class="num">예상단가</th><th class="num">* 예상금액</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <p class="hint">칸을 누르면 그 값이 복사됩니다. 에듀파인에서 [행추가] 후 차례로 붙여넣으세요. 예상금액은 에듀파인이 계산하면 넣지 않아도 됩니다.</p>
+      </section>
+
+      <section>
+        <h2>에듀파인 자동입력 <button class="primary" data-copy="payload" type="button">자동입력 데이터 복사</button></h2>
+        <ol class="steps">
+          <li>처음 한 번만: 아래 <b>품의 자동입력</b> 단추를 브라우저 즐겨찾기 막대로 끌어다 놓습니다. 끌기가 안 되면 [북마크 코드 복사] 후 즐겨찾기를 새로 만들고 URL 칸에 붙여넣습니다.</li>
+          <li>이 페이지에서 [자동입력 데이터 복사]를 누릅니다.</li>
+          <li>에듀파인 품의 화면에서 [신규]를 누른 뒤 즐겨찾기의 <b>품의 자동입력</b>을 클릭하고, 뜨는 창에 붙여넣습니다.</li>
+          <li>제목과 개요가 채워집니다. 품목내역과 첨부파일은 직접 넣고, 저장 전에 한 번 확인하세요.</li>
+        </ol>
+        <div class="btns" style="margin-top:12px"><a class="bm" id="bm" href="#">품의 자동입력</a><button data-copy="bookmarklet" type="button">북마크 코드 복사</button></div>
+        <p class="hint">에듀파인 화면 구조에 따라 칸을 못 찾을 수 있습니다. 그때는 위의 복사 단추로 붙여넣으면 됩니다.</p>
+      </section>
+    </div>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+var BOOKMARKLET = "javascript:(function () { var raw = prompt('품의 도우미에서 복사한 자동입력 데이터를 붙여넣으세요'); if (!raw) return; var d; try { d = JSON.parse(raw); } catch (e) { alert('자동입력 데이터 형식이 아닙니다. 도우미에서 다시 복사해 주세요.'); return; } function docs(w, out) { out.push(w.document); for (var i = 0; i < w.frames.length; i++) { try { w.frames[i].document && docs(w.frames[i], out); } catch (e) {} } return out; } function visible(el) { return el.offsetParent !== null && !el.disabled && !el.readOnly; } function norm(s) { return (s || '').replace(/[\\s*]/g, ''); } function findField(label, tag) { var ds = docs(window, []); for (var k = 0; k < ds.length; k++) { var cands = ds[k].querySelectorAll('th,td,label,span,div'); for (var i = 0; i < cands.length; i++) { var c = cands[i]; if (c.children.length > 2 || norm(c.textContent) !== label) continue; var box = c; for (var up = 0; up < 5 && box; up++) { box = box.parentElement; if (!box) break; var fields = box.querySelectorAll(tag); for (var j = 0; j < fields.length; j++) { var f = fields[j]; if (visible(f) && (c.compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING)) return f; } } } } return null; } function setVal(el, v) { el.focus(); var proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype; Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v); ['input', 'keyup', 'change'].forEach(function (t) { el.dispatchEvent(new Event(t, { bubbles: true })); }); el.blur(); el.dispatchEvent(new Event('blur', { bubbles: true })); } var msg = []; var t = findField('제목', 'input[type=text],input:not([type]),textarea'); if (t) { setVal(t, d.title); msg.push('제목: 입력함'); } else msg.push('제목: 칸을 찾지 못함'); var o = findField('개요', 'textarea'); if (o) { setVal(o, d.overview); msg.push('개요: 입력함'); } else msg.push('개요: 칸을 찾지 못함'); msg.push('', '품목내역은 도우미 표를 보고 [행추가]로 입력해 주세요.', '요구금액 합계: ' + Number(d.total).toLocaleString() + '원'); alert(msg.join('\\n')); })();";
+var COLORS = {K:"검정",C:"파랑",M:"빨강",Y:"노랑"};
+var DIG = ["","일","이","삼","사","오","육","칠","팔","구"], SMALL = ["천","백","십",""], BIG = ["","만","억","조"];
+var SAMPLES = {
+  ex1: {subject:"2학년,4학년 연구실 복사기 토너 구입",location:"2학년,4학년 연구실",vendor:"○○사무기기",quoteTotal:1749000,
+    attachments:["지출품의서 1부","견적서 1부"],
+    items:[{name:"K토너",spec:"CM2075",qty:4,price:121000},{name:"C토너",spec:"CM2075",qty:1,price:253000},
+           {name:"M토너",spec:"CM2075",qty:2,price:253000},{name:"Y토너",spec:"CM2075",qty:2,price:253000}]},
+  ex2: {subject:"복사기 토너 및 드럼유니트 구입",location:"",vendor:"○○사무기기",quoteTotal:1122000,
+    attachments:["지출품의서 1부","견적서 1부"],
+    items:[{name:"컬러복합기토너 K",spec:"CM2075",qty:2,price:132000},{name:"컬러복합기토너 Y",spec:"CM2075",qty:1,price:264000},
+           {name:"컬러복합기토너 C",spec:"CM2075",qty:1,price:264000},{name:"드럼유니트 M",spec:"CM2075",qty:1,price:330000}]}
+};
+var $ = function(id){return document.getElementById(id)};
+var current = {};
+
+function korean(n){
+  if(!n) return "영";
+  var groups=[], out="";
+  while(n){groups.push(n%10000); n=Math.floor(n/10000);}
+  for(var i=groups.length-1;i>=0;i--){
+    if(!groups[i]) continue;
+    var s=String(groups[i]).padStart(4,"0");
+    for(var p=0;p<4;p++){var d=+s[p]; if(d) out+=DIG[d]+SMALL[p];}
+    out+=BIG[i];
+  }
+  return out;
+}
+function won(n){return Number(n).toLocaleString("ko-KR")}
+function toInt(v){return parseInt(String(v).replace(/[^\d]/g,""),10)||0}
+function bytes(s){return new TextEncoder().encode(s).length}
+function autoLabel(name){
+  var m=name.match(/토너\s*([KCMY])$/)||name.match(/^([KCMY])\s*토너/);
+  if(m) return COLORS[m[1]];
+  m=name.match(/^(.*?)\s*([KCMY])$/);
+  if(m&&m[1]) return m[1]+"("+COLORS[m[2]]+")";
+  return name;
+}
+
+function addRow(it){
+  it=it||{unit:"개"};
+  var tr=document.createElement("tr");
+  var n=$("items").tBodies[0].rows.length;
+  tr.innerHTML='<td><input data-k="name" aria-label="품명"></td><td><input data-k="label" aria-label="개요 표기"></td>'+
+    '<td><input data-k="spec" aria-label="규격" style="width:7em"></td><td><input data-k="qty" class="num" inputmode="numeric" aria-label="수량" style="width:4em"></td>'+
+    '<td><input data-k="unit" aria-label="단위" style="width:3.5em"></td><td><input data-k="price" class="num" inputmode="numeric" aria-label="단가" style="width:7em"></td>'+
+    '<td class="amt"></td><td><button class="x" type="button" aria-label="행 삭제">×</button></td>';
+  tr.querySelectorAll("input").forEach(function(inp){
+    var k=inp.dataset.k; inp.id="item"+n+"_"+k;
+    var v=it[k]; if(v==null) v=(k==="unit"?"개":"");
+    inp.value=(k==="price"&&v!=="")?won(v):v;
+  });
+  tr.querySelector(".x").onclick=function(){tr.remove(); render();};
+  $("items").tBodies[0].appendChild(tr);
+}
+
+function readForm(){
+  var items=[];
+  Array.prototype.forEach.call($("items").tBodies[0].rows,function(tr){
+    var g=function(k){return tr.querySelector('[data-k="'+k+'"]').value.trim()};
+    if(!g("name")) return;
+    items.push({name:g("name"),label:g("label"),spec:g("spec"),qty:toInt(g("qty")),unit:g("unit")||"개",price:toInt(g("price"))});
+  });
+  return {subject:$("subject").value.trim(),location:$("location").value.trim(),vendor:$("vendor").value.trim(),
+    quoteTotal:$("quoteTotal").value.trim()?toInt($("quoteTotal").value):null,
+    attachments:$("attachments").value.split("\n").map(function(s){return s.trim()}).filter(Boolean),items:items};
+}
+
+function build(d){
+  var items=d.items.map(function(it){return Object.assign({},it,{unit:it.unit||"개",amount:it.qty*it.price,label:it.label||autoLabel(it.name)})});
+  var total=items.reduce(function(a,it){return a+it.amount},0);
+  var specs={}; items.forEach(function(it){specs[it.spec]=1});
+  var detail;
+  if(Object.keys(specs).length===1&&items.length&&items[0].spec){
+    detail=items[0].spec+", "+items.map(function(it){return it.label+" "+it.qty+it.unit}).join(", ");
+  }else{
+    detail=items.map(function(it){return it.label+(it.spec?"("+it.spec+")":"")+" "+it.qty+it.unit}).join(", ");
+  }
+  var groups=[];
+  items.forEach(function(it){
+    var g=groups.find(function(g){return g.price===it.price&&g.unit===it.unit});
+    if(g) g.qty+=it.qty; else groups.push({price:it.price,unit:it.unit,qty:it.qty});
+  });
+  var calc=groups.map(function(g){return won(g.price)+"원*"+g.qty+g.unit}).join("+")+"="+won(total)+"원.";
+  var att=d.attachments.length?d.attachments:["지출품의서 1부","견적서 1부"], attach;
+  if(att.length===1) attach="붙임: "+att[0]+".  끝.";
+  else attach=att.map(function(a,i){return (i?"      ":"붙임: ")+(i+1)+". "+a}).join("\n")+".  끝.";
+  var overview=[" 1. 건명: "+d.subject," 2. 위치: "+(d.location||"(위치 입력)")," 3. 내역: "+detail,
+    " 4. 금액: 금"+won(total)+"원(금"+korean(total)+"원정)"," 5. 산출내역: "+calc," 6. 구입처: "+d.vendor,attach].join("\n");
+  return {title:d.subject,overview:overview,total:total,
+    items:items.map(function(it){return {name:it.name,spec:it.spec,qty:it.qty,unit:it.unit,price:it.price,amount:it.amount}})};
+}
+
+function render(){
+  var d=readForm(), r=build(d);
+  current=r;
+  Array.prototype.forEach.call($("items").tBodies[0].rows,function(tr){
+    var q=toInt(tr.querySelector('[data-k="qty"]').value), p=toInt(tr.querySelector('[data-k="price"]').value);
+    tr.querySelector(".amt").textContent=q&&p?won(q*p):"";
+    var lab=tr.querySelector('[data-k="label"]'), nm=tr.querySelector('[data-k="name"]').value.trim();
+    lab.placeholder=nm?autoLabel(nm):"";
+  });
+  $("outTitle").textContent=r.title||"(건명을 입력하세요)";
+  $("outOverview").textContent=r.overview;
+  var tb=bytes(r.title), ob=bytes(r.overview);
+  $("titleBytes").innerHTML='<span class="pill'+(tb>300?' bad':'')+'">'+tb+' / 300 Byte</span>';
+  $("ovBytes").innerHTML='<span class="pill'+(ob>2000?' bad':'')+'">'+ob+' / 2000 Byte</span>';
+  if(d.quoteTotal!=null){
+    var ok=d.quoteTotal===r.total;
+    $("check").innerHTML='<span class="pill '+(ok?'ok':'bad')+'">'+(ok?'견적서 합계와 일치':'견적서 합계 '+won(d.quoteTotal)+'원과 다름')+'</span>';
+  }else $("check").innerHTML="";
+  var rows=$("rows"); rows.innerHTML="";
+  r.items.forEach(function(it,i){
+    var tr=document.createElement("tr");
+    [[i+1,""],[it.name,""],[it.spec,""],[it.qty,"num"],[it.unit,""],[won(it.price),"num"],[won(it.amount),"num"]].forEach(function(c,j){
+      var td=document.createElement("td"); td.textContent=c[0]; td.className=c[1];
+      if(j>0){td.classList.add("c"); td.title="눌러서 복사"; td.dataset.v=(j>=5?String(j===5?it.price:it.amount):String(c[0]));
+        td.onclick=function(){copy(td.dataset.v,"\""+td.textContent+"\" 복사함"); td.classList.add("done");};}
+      tr.appendChild(td);
+    });
+    rows.appendChild(tr);
+  });
+  var tr=document.createElement("tr");
+  tr.innerHTML='<td></td><td colspan="5" style="font-weight:600">요구금액</td><td class="num" style="font-weight:600">'+won(r.total)+'</td>';
+  rows.appendChild(tr);
+  try{localStorage.setItem("pumui-draft",JSON.stringify(d))}catch(e){}
+}
+
+function load(d){
+  $("subject").value=d.subject||""; $("location").value=d.location||""; $("vendor").value=d.vendor||"";
+  $("quoteTotal").value=d.quoteTotal!=null?won(d.quoteTotal):"";
+  $("attachments").value=(d.attachments&&d.attachments.length?d.attachments:["지출품의서 1부","견적서 1부"]).join("\n");
+  $("items").tBodies[0].innerHTML="";
+  (d.items||[]).forEach(addRow);
+  if(!(d.items||[]).length) addRow();
+  render();
+}
+
+function toast(msg){var t=$("toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast.t); toast.t=setTimeout(function(){t.classList.remove("on")},1600);}
+function copy(text,msg){
+  function fallback(){
+    var ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
+    var ok=false; try{ok=document.execCommand("copy")}catch(e){}
+    ta.remove(); toast(ok?msg:"복사가 막혀 있습니다. 내용을 직접 선택해 복사하세요.");
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){toast(msg)},fallback);
+  else fallback();
+}
+
+document.querySelectorAll("[data-copy]").forEach(function(b){
+  b.addEventListener("click",function(){
+    var k=b.dataset.copy;
+    if(k==="title") copy(current.title,"제목 복사함");
+    else if(k==="overview") copy(current.overview,"개요 복사함");
+    else if(k==="tsv") copy(current.items.map(function(it){return [it.name,it.spec,it.qty,it.unit,it.price,it.amount].join("\t")}).join("\n"),"품목 표 복사함");
+    else if(k==="payload") copy(JSON.stringify(current),"자동입력 데이터 복사함");
+    else if(k==="bookmarklet") copy(BOOKMARKLET,"북마크 코드 복사함");
+  });
+});
+$("bm").href=BOOKMARKLET;
+$("bm").addEventListener("click",function(e){e.preventDefault(); toast("이 단추는 즐겨찾기 막대로 끌어다 놓아 쓰세요.");});
+document.querySelector(".grid").addEventListener("input",render);
+$("addRow").onclick=function(){addRow(); render();};
+$("ex1").onclick=function(){load(SAMPLES.ex1)};
+$("ex2").onclick=function(){load(SAMPLES.ex2)};
+$("importBtn").onclick=function(){
+  try{
+    var d=JSON.parse($("importBox").value);
+    if(!d.items) throw 0;
+    load(d); $("importBox").value=""; toast("불러왔습니다");
+  }catch(e){toast("입력 데이터 형식이 아닙니다. Claude가 준 { } 부분 전체를 붙여넣으세요.");}
+};
+
+var saved=null;
+try{saved=JSON.parse(localStorage.getItem("pumui-draft")||"null")}catch(e){}
+load(saved&&saved.items&&saved.items.length?saved:SAMPLES.ex1);
+</script>
