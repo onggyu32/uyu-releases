@@ -1,0 +1,11 @@
+{
+  "name": "edufine",
+  "version": "0.1.0",
+  "description": "견적서 사진으로 에듀파인 품의(제목·개요·품목내역)를 만들어 주는 스킬",
+  "author": {
+    "name": "onggyu32"
+  },
+  "repository": "https://github.com/onggyu32/uyu-releases",
+  "license": "MIT",
+  "keywords": ["edufine", "에듀파인", "품의", "견적서"]
+}
